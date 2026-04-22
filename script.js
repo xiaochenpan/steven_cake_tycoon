@@ -1,5 +1,4 @@
-
-        // ========================================================
+// ========================================================
         // CODEPEN SETUP - JS PANEL
         // Copy everything below this line and paste it into the JS panel.
         // ========================================================
@@ -509,5 +508,3 @@
         window.onkeydown = (e) => { keys[e.key.toLowerCase()] = true; };
         window.onkeyup = (e) => { keys[e.key.toLowerCase()] = false; };
         function toggleFullScreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
-
-        
