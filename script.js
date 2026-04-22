@@ -49,7 +49,7 @@
                     floor2: false, floor3: false,
                     launchPad: false, miniStatue: false,
                     skyDropper: false, moonDropper: false, completed: false,
-                    hedges: false
+                    hedges: false, floor2Belt: false, floor2Dropper: false
                 },
                 parts: {}
             });
@@ -189,14 +189,21 @@
             factories[fi].parts.upperFloors = upperFloorsAndStairs;
             tycoon.add(upperFloorsAndStairs);
 
+            // 2nd Floor Belt & Bin
+            const floor2BeltGroup = new THREE.Group();
+            const belt2 = new THREE.Mesh(new THREE.BoxGeometry(4, 0.3, 12), new THREE.MeshStandardMaterial({ color: 0x111111 }));
+            belt2.position.set(8, 10.45, 0); 
+            const bin2 = new THREE.Mesh(new THREE.BoxGeometry(5, 3, 5), new THREE.MeshStandardMaterial({ color: 0xffaa00 }));
+            bin2.position.set(8, 10.2, 5);
+            floor2BeltGroup.add(belt2, bin2);
+            floor2BeltGroup.visible = false;
+            factories[fi].parts.floor2Belt = floor2BeltGroup;
+            tycoon.add(floor2BeltGroup);
+
             // Manual Baking Station Models (Attached to Floor 2)
             const bakingStation = new THREE.Group();
-            
-            // Desk
             const desk = new THREE.Mesh(new THREE.BoxGeometry(8, 1.5, 3), new THREE.MeshStandardMaterial({color: 0x8b4513}));
             desk.position.set(0, 10.75, 8); 
-            
-            // Oven
             const oven = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2), new THREE.MeshStandardMaterial({color: 0x333333}));
             oven.position.set(-3, 11.5, 8);
             const ovenGlow = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1), new THREE.MeshBasicMaterial({color: 0xff4500}));
@@ -281,7 +288,7 @@
 
         function check100Percent(fi) {
             const f = factories[fi];
-            if (!f.flags.completed && f.dropperCount === 3 && f.flags.floor2 && f.flags.floor3 && f.flags.launchPad && f.flags.skyDropper && f.flags.moonDropper) {
+            if (!f.flags.completed && f.dropperCount === 3 && f.flags.floor2 && f.flags.floor3 && f.flags.launchPad && f.flags.skyDropper && f.flags.moonDropper && f.flags.floor2Belt && f.flags.floor2Dropper) {
                 f.flags.completed = true;
                 if (fi < 5) spawnTakeoverButton(fi + 1);
             }
@@ -316,9 +323,10 @@
                 if (money >= f2Cost && !f.flags.floor2) { 
                     money -= f2Cost; f.flags.floor2 = true; 
                     f.parts.upperFloors.visible = true; 
-                    f.parts.bakingStation.visible = true; // Turn on new baking meshes
+                    f.parts.bakingStation.visible = true; 
                     spawnFloor3Button(fi); 
-                    spawnBakingButtons(fi); // Turn on baking buttons
+                    spawnBakingButtons(fi); 
+                    spawnFloor2BeltButton(fi);
                     check100Percent(fi); 
                     updateInventoryUI();
                     return true; 
@@ -333,25 +341,47 @@
             }, fi);
         }
 
+        function spawnFloor2BeltButton(fi) {
+            const f = factories[fi];
+            const cost = 3000 * f.priceMult;
+            makeBtn(85, 10.35, 2, 0x555555, `2nd Floor Conveyor\n$${cost.toLocaleString()}`, () => {
+                if (money >= cost && !f.flags.floor2Belt) {
+                    money -= cost; f.flags.floor2Belt = true;
+                    f.parts.floor2Belt.visible = true;
+                    spawnFloor2DropperButton(fi);
+                    check100Percent(fi); updateInventoryUI(); return true;
+                } return false;
+            }, fi);
+        }
+
+        function spawnFloor2DropperButton(fi) {
+            const f = factories[fi];
+            const cost = 4000 * f.priceMult;
+            makeBtn(92, 10.35, -2, 0xff69b4, `Pink Cake Dropper\n$${cost.toLocaleString()}`, () => {
+                if (money >= cost && !f.flags.floor2Dropper) {
+                    money -= cost; f.flags.floor2Dropper = true;
+                    spawnFloor2Dropper(fi);
+                    check100Percent(fi); updateInventoryUI(); return true;
+                } return false;
+            }, fi);
+        }
+
         function spawnBakingButtons(fi) {
             const f = factories[fi];
             const ingCost = 15 * f.priceMult;
 
-            // Buy Ingredients (Reusable, mapped to true)
             makeBtn(85, 10.35, 11, 0xaaaaaa, `Buy Ingredients\n$${ingCost}`, () => {
                 if (money >= ingCost) {
                     money -= ingCost; manualBaking.batter++; updateInventoryUI(); return true;
                 } return false;
             }, fi, true);
 
-            // Bake Cake (Reusable)
             makeBtn(81, 10.35, 11, 0xffa500, `Bake Cake\n(-1 Ingredient)`, () => {
                 if (manualBaking.batter > 0) {
                     manualBaking.batter--; manualBaking.cakes++; updateInventoryUI(); return true;
                 } return false;
             }, fi, true);
 
-            // Cake Seller (Reusable)
             makeBtn(90, 10.35, -5, 0x00ff00, `Cake Seller\n(Sell Backpack)`, () => {
                 if (manualBaking.cakes > 0) {
                     const earnings = manualBaking.cakes * (50 + (manualBaking.recipeTier * 50)) * f.priceMult;
@@ -365,16 +395,16 @@
         function spawnRecipeUpgrade(fi) {
             const f = factories[fi];
             if (!f.recipeTierLocal) f.recipeTierLocal = 1;
-            if (f.recipeTierLocal > 5) return; // Max of 5 local upgrades per factory
+            if (f.recipeTierLocal > 5) return; 
 
             const cost = 500 * f.priceMult * Math.pow(2.5, f.recipeTierLocal - 1);
             makeBtn(88, 10.35, 11, 0xff00ff, `Upgrade Recipe\n$${cost.toLocaleString()}`, () => {
                 if (money >= cost) {
                     money -= cost; 
                     f.recipeTierLocal++; 
-                    manualBaking.recipeTier++; // Global player boost
+                    manualBaking.recipeTier++; 
                     updateInventoryUI();
-                    spawnRecipeUpgrade(fi); // Spawns the next tier button
+                    spawnRecipeUpgrade(fi); 
                     return true;
                 } return false;
             }, fi, false);
@@ -454,6 +484,19 @@
             f.dropperCount++;
         }
 
+        function spawnFloor2Dropper(fi) {
+            const f = factories[fi];
+            const angle = (fi / 6) * Math.PI * 2;
+            const d = new THREE.Group();
+            const pillar = new THREE.Mesh(new THREE.BoxGeometry(1.5, 4, 1.5), new THREE.MeshStandardMaterial({ color: 0x444444 }));
+            const overhang = new THREE.Mesh(new THREE.BoxGeometry(4.5, 0.8, 1.5), new THREE.MeshStandardMaterial({ color: 0x5d4037 })); overhang.position.set(-2.25, 1.6, 0); 
+            d.add(pillar, overhang);
+            d.rotation.y = Math.PI + angle;
+            d.position.copy(getWorldPos(89.5, 12.35, -5, angle)); 
+            scene.add(d);
+            f.activeDroppers.push({pos: getWorldPos(93, 13.75, -5, angle), type: 'floor2', fi: fi});
+        }
+
         function spawnMoonDropper(fi) {
             const angle = (fi / 6) * Math.PI * 2;
             const d = new THREE.Group();
@@ -479,12 +522,12 @@
         }
 
         function spawnCake(info) {
-            const color = info.type === 'moon' ? 0x00ffff : (info.type === 'sky' ? 0x00ffaa : 0x3d2b1f);
+            const color = info.type === 'moon' ? 0x00ffff : (info.type === 'sky' ? 0x00ffaa : (info.type === 'floor2' ? 0xff69b4 : 0x3d2b1f));
             const cake = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.8, 1.2), new THREE.MeshStandardMaterial({ color: color }));
             cake.position.copy(info.pos);
             scene.add(cake);
-            const targetY = info.type === 'moon' ? 500.5 : (info.type === 'sky' ? 18.6 : 3.0); 
-            const val = info.type === 'moon' ? (500 * factories[info.fi].priceMult) : (info.type === 'sky' ? (250 * factories[info.fi].priceMult) : factories[info.fi].cakeValue);
+            const targetY = info.type === 'moon' ? 500.5 : (info.type === 'sky' ? 18.6 : (info.type === 'floor2' ? 10.6 : 3.0)); 
+            const val = info.type === 'moon' ? (500 * factories[info.fi].priceMult) : (info.type === 'sky' ? (250 * factories[info.fi].priceMult) : (info.type === 'floor2' ? (75 * factories[info.fi].priceMult) : factories[info.fi].cakeValue));
             cakes.push({ mesh: cake, val: val, targetY: targetY, type: info.type, fi: info.fi });
         }
 
@@ -546,7 +589,8 @@
                     else { c.mesh.position.x += 4 * delta * (-Math.sin(angle)); c.mesh.position.z += 4 * delta * Math.cos(angle); }
                     const lX = c.mesh.position.x * Math.cos(-angle) - c.mesh.position.z * Math.sin(-angle);
                     const lZ = c.mesh.position.x * Math.sin(-angle) + c.mesh.position.z * Math.cos(-angle);
-                    if ((c.type === 'sky' && lX >= 59.5) || (c.type !== 'sky' && lZ >= 13)) {
+                    
+                    if ((c.type === 'sky' && lX >= 59.5) || (c.type === 'floor2' && lZ >= 5) || (c.type !== 'sky' && c.type !== 'floor2' && lZ >= 13)) {
                         scene.remove(c.mesh); cakes.splice(i, 1); money += c.val;
                         updateInventoryUI();
                     }
@@ -623,4 +667,3 @@
         window.onkeydown = (e) => { keys[e.key.toLowerCase()] = true; };
         window.onkeyup = (e) => { keys[e.key.toLowerCase()] = false; };
         function toggleFullScreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
-    
