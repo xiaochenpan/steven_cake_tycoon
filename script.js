@@ -533,40 +533,50 @@
 
         // PERFECTED COLLISION MATH
         function checkCollision(pos) {
-            for (let i = 0; i < 6; i++) {
-                const angle = (i / 6) * Math.PI * 2;
-                const localX = pos.x * Math.cos(-angle) - pos.z * Math.sin(-angle);
-                const localZ = pos.x * Math.sin(-angle) + pos.z * Math.cos(-angle);
-                
-                if (pos.y > 400) { 
-                    if (Math.sqrt(Math.pow(localX - 85, 2) + Math.pow(localZ, 2)) > 37.5) return true; 
-                    return false; 
+            if (pos.y > 400) { 
+                // Check if player is inside ANY of the 6 moon domes
+                for (let i = 0; i < 6; i++) {
+                    const angle = (i / 6) * Math.PI * 2;
+                    const pX = (pos.x * Math.cos(-angle) - pos.z * Math.sin(-angle)) - 85;
+                    const pZ = pos.x * Math.sin(-angle) + pos.z * Math.cos(-angle);
+                    if (Math.sqrt(Math.pow(pX, 2) + Math.pow(pZ, 2)) <= 37.5) return false; // Inside a dome, allow movement
                 }
+                return true; // Outside bounds of all moon domes, block movement
+            }
+
+            for (let i = 0; i < 6; i++) {
+                const f = factories[i];
+                const angle = (i / 6) * Math.PI * 2;
+                const pX = (pos.x * Math.cos(-angle) - pos.z * Math.sin(-angle)) - 85;
+                const pZ = pos.x * Math.sin(-angle) + pos.z * Math.cos(-angle);
                 
-                if (!factories[i].unlocked) { 
-                    if (Math.sqrt(Math.pow(localX - 85, 2) + Math.pow(localZ, 2)) < 15) return true; 
+                if (!f.unlocked) { 
+                    if (Math.sqrt(Math.pow(pX, 2) + Math.pow(pZ, 2)) < 15) return true; 
                     continue; 
                 }
                 
                 // Factory Main Walls
-                if (localX > 70.5 && localX < 99.5 && localZ > -14.5 && localZ < 14.5) {
-                    if (localX < 71.5 && (localZ < -4 || localZ > 4)) return true;
-                    if (localZ < -13.5 || localZ > 13.5 || localX > 98.5) return true;
+                if (pX > -14.5 && pX < 14.5 && pZ > -14.5 && pZ < 14.5) {
+                    if (pX < -13.5 && (pZ < -4 || pZ > 4)) return true;
+                    if (pX > 13.5) return true;
+                    if (pZ < -13.5 && (pX < -4 || pX > 4 || pos.y < 18)) return true;
+                    if (pZ > 13.5) return true;
                 }
 
                 // Hedge Collision (Fully fixed!)
-                if (factories[i].flags.hedges) {
-                    if (localX > 67.5 && localX < 102.5 && localZ > -18.5 && localZ < 18.5) {
-                        if (localZ > 16.5) return true; // Left Hedge
-                        if (localZ < -16.5) return true; // Right Hedge
-                        if (localX > 100.5) return true; // Back Hedge
-                        if (localX < 70 && (localZ < -6.5 || localZ > 6.5)) return true; // Front Hedge with perfectly clear gap!
+                if (f.flags.hedges) {
+                    if (pX > -17.5 && pX < 17.5 && pZ > -16.5 && pZ < 16.5) {
+                        if (pZ > 15.5) return true; // Left Hedge
+                        if (pZ < -15.5) return true; // Right Hedge
+                        if (pX > 15.5) return true; // Back Hedge
+                        if (pX < -15.5 && (pZ < -6.5 || pZ > 6.5)) return true; // Front Hedge with perfectly clear gap!
                     }
                 }
             }
             if (pos.x < -495 || pos.x > 495 || pos.z < -495 || pos.z > 495) return true;
             return false;
         }
+
 
         let playerVelocityY = 0;
 
