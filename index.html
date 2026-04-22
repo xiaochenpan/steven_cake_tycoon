@@ -10,6 +10,11 @@
     
   <body>
 
+    <div id="js-warning">
+        <h1 style="font-size: 3rem; font-weight: 900; margin-bottom: 16px;">JavaScript Required</h1>
+        <p style="font-size: 1.25rem;">Please enable JavaScript to play Cake Tycoon.</p>
+    </div>
+
     <div id="loading-screen">
         <div class="loader-ring"></div>
         <h1 class="title-text">CAKE TYCOON</h1>
@@ -31,13 +36,24 @@
 
     <div id="ui-layer">
         <div id="top-ui">
+            <!-- Bank Panel -->
             <div class="ui-panel">
                 <div class="ui-header">
-                    <div class="text-label">Cash</div>
+                    <div class="text-label">Bank</div>
                     <div class="text-label-blue">Factories: <span id="factories-display">1</span></div>
                 </div>
                 <div class="text-money" id="money-display">$0</div>
             </div>
+
+            <!-- New Backpack Panel -->
+            <div class="ui-panel">
+                <div class="ui-header">
+                    <div class="text-label" style="color: #9333ea;">Backpack</div>
+                </div>
+                <div class="controls-text" style="margin: 0; font-size: 0.9rem;">Ingredients: <strong id="batter-display" style="color: #b45309;">0</strong></div>
+                <div class="controls-text" style="margin: 0; font-size: 0.9rem;">Hand-Baked: <strong id="baked-cakes-display" style="color: #b45309;">0</strong></div>
+            </div>
+
             <button onclick="toggleFullScreen()" class="btn-full interactive">⛶ Fullscreen</button>
         </div>
 
@@ -48,7 +64,6 @@
         </div>
 
         <div id="crosshair" class="crosshair"></div>
-    </div>
     <script src='https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js'></script><script  src="./script.js"></script>
 
   </body>
